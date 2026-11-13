@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>✨ KHẢO BÀI TỪ VỰNG ✨</title>
+
+<style>
+body{
+  font-family:Arial;
+  background:linear-gradient(135deg,#ffe6f0,#e0f7fa);
+  margin:0;padding:0;
+}
+
+.container{
+  max-width:900px;
+  margin:30px auto;
+  background:#fff;
+  padding:20px;
+  border-radius:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.1);
+}
+
+h1{
+  text-align:center;
+  color:#ff4da6;
+}
+
+.header{
+  text-align:center;
+  margin-bottom:15px;
+}
+
+#username{
+  padding:10px;
+  border-radius:20px;
+  border:1px solid #ccc;
+  width:60%;
+  text-align:center;
+}
+
+#timer{
+  text-align:center;
+  font-size:18px;
+  margin:10px;
+}
+
+.question{
+  background:#f9f9f9;
+  padding:12px;
+  margin-bottom:10px;
+  border-radius:12px;
+}
+
+.unanswered{
+  border:2px solid red;
+  background:#fff0f0;
+}
+
+.answers label{
+  display:block;
+  margin:5px 0;
+  cursor:pointer;
+}
+
+button{
+  display:block;
+  margin:20px auto;
+  padding:12px 25px;
+  border:none;
+  border-radius:25px;
+  background:#ff4da6;
+  color:#fff;
+  font-size:16px;
+  cursor:pointer;
+}
+
+#result{
+  margin-top:20px;
+}
+
+#leaderboard{
+  margin-top:10px;
+}
+
+.quiz-locked{
+  opacity:0.55;
+  pointer-events:none;
+}
+
+#nameHint{
+  text-align:center;
+  color:#c00000;
+  font-weight:bold;
+  margin-top:8px;
+}
+</style>
+</head>
+
+<body oncontextmenu="return false;">
+
+<div class="container">
+
+<h1>✨ KHẢO BÀI TỪ VỰNG  ✨</h1>
+
+<div class="header">
+<input id="username" placeholder="Nhập tên của bạn...">
+<div id="nameHint">⚠️ Phải nhập tên trước khi làm bài.</div>
+</div>
+
+<div id="timer">⏳ 20:00</div>
+
+<div id="quiz"></div>
+
+<button onclick="submitQuiz()">Nộp bài</button>
+
+<div id="result"></div>
+
+<h3>🏆 Bảng xếp hạng</h3>
+<div id="leaderboard"></divầy 
+</div>
+
+<script>
+let tabSwitchCount = 0;
+let submitted = false;
+let timeExpired = false; 
+
+document.addEventListener("visibilitychange", function() {
+  if (document.hidden) {
+    tabSwitchCount++;
+
+    alert("⚠️ Bạn đã rời tab (" + tabSwitchCount + " lần)");
+
+    if(tabSwitchCount >= 3){
+      alert("❌ Bạn rời tab quá nhiều!");
+      submitQuiz();
+    }
+  }
+});
+
+// 🔀 random
+function shuffle(arr){
+  return arr.sort(()=>Math.random()-0.5);
+}
+
+// 📚 DATA
+let originalQuestions = [
+ {
+    q: "The government launched a nationwide investigation to ______ websites that deliberately spread dangerous medical misinformation, imposing heavy fines on those responsible.",
+    a: ["rally around", "pave the way for", "crack down on", "lay the groundwork for"],
+    c: 2
+  },
+  {
+    q: "Repeated scandals involving senior officials have gradually begun to ______ public trust in the government, weakening confidence year after year.",
+    a: ["chip away at", "reinforce", "cultivate", "facilitate"],
+    c: 0
+  },
+  {
+    q: "Once deeply misleading beliefs ______ in a community, correcting them can require years of education and sustained public awareness campaigns.",
+    a: ["materialize", "circulate", "skyrocket", "take root"],
+    c: 3
+  },
+  {
+    q: "The university introduced a rigorous screening process to ______ applicants who had submitted forged qualifications before the final interviews.",
+    a: ["integrate", "weed out", "accommodate", "foster"],
+    c: 1
+  },
+  {
+    q: "Fraudsters frequently ______ elderly people who live alone, exploiting their isolation and unfamiliarity with online financial services.",
+    a: ["prevail over", "rally around", "prey on", "align with"],
+    c: 2
+  },
+  {
+    q: "Unless emergency measures are implemented immediately, the outbreak could ______, overwhelming hospitals and leaving health authorities unable to contain its spread.",
+    a: ["spiral out of control", "run out of steam", "turn the tide", "go hand in hand with"],
+    c: 0
+  },
+  {
+    q: "Despite receiving several detailed reports of financial misconduct, the company's directors chose to ______ the illegal activities rather than investigate them.",
+    a: ["crack down on", "weed out", "lay the groundwork for", "turn a blind eye to"],
+    c: 3
+  },
+  {
+    q: "In many developing economies, rapid industrialisation does not necessarily ______ improvements in environmental protection; economic growth can occur alongside severe pollution.",
+    a: ["stem from", "go hand in hand with", "prevail over", "compensate for"],
+    c: 1
+  },
+  {
+    q: "The successful completion of the first clinical trial is expected to ______ the development of more effective treatments for the disease.",
+    a: ["pave the way for", "turn a blind eye to", "run out of steam", "prey on"],
+    c: 0
+  },
+  {
+    q: "Before launching the nationwide education reform, researchers conducted several pilot studies to ______ a more comprehensive policy framework.",
+    a: ["throw in the towel", "tip the scales", "lay the groundwork for", "spiral out of control"],
+    c: 2
+  },
+  {
+    q: "Although the small business suffered substantial financial losses during its first two years, its founder refused to ______ and continued searching for investors.",
+    a: ["turn the tide", "throw in the towel", "keep afloat", "loom large"],
+    c: 1
+  },
+  {
+    q: "The start-up initially attracted enormous investment, but its expansion began to ______ after several unsuccessful product launches and declining consumer interest.",
+    a: ["take root", "materialize", "skyrocket", "run out of steam"],
+    c: 3
+  },
+  {
+    q: "During the economic downturn, the family-owned restaurant introduced a delivery service to ______ until customers could return to dining indoors.",
+    a: ["keep afloat", "outpace", "turn the tide", "loom large"],
+    c: 0
+  },
+  {
+    q: "Despite repeated warnings from environmental groups, the corporation was ______ expanding its mining operations into the protected forest.",
+    a: ["grounded in", "confined to", "bent on", "derived from"],
+    c: 2
+  },
+  {
+    q: "When the community centre was threatened with closure, local residents decided to ______ the volunteers who had worked for years to support disadvantaged children.",
+    a: ["prey on", "rally around", "chip away at", "prevail over"],
+    c: 1
+  },
+  {
+    q: "The technology company's revenue continued to increase by nearly 40% annually, allowing it to ______ its slower-growing competitors in several international markets.",
+    a: ["accommodate", "interpret", "cultivate", "outpace"],
+    c: 3
+  },
+  {
+    q: "Following an unexpected surge in demand, the price of essential medical equipment began to ______, rising by more than 300% in just two weeks.",
+    a: ["skyrocket", "tumble", "diminish", "stabilise"],
+    c: 0
+  },
+  {
+    q: "After investigators uncovered widespread accounting fraud, the company's share price began to ______, falling by almost 70% within a single trading session.",
+    a: ["soar", "reinforce", "tumble", "materialize"],
+    c: 2
+  },
+  {
+    q: "Despite months of negotiations and several optimistic announcements, the proposed international trade agreement failed to ______ because the participating countries could not resolve their differences.",
+    a: ["facilitate", "materialize", "circulate", "resonate"],
+    c: 1
+  },
+  {
+    q: "As the country approaches a major economic transition, uncertainty surrounding future employment opportunities continues to ______ in the minds of young workers.",
+    a: ["turn the tide", "tip the scales", "keep afloat", "loom large"],
+    c: 3
+  },
+  {
+    q: "During the floods, several completely invented rescue stories spread online. Investigators later confirmed that the stories were deliberately ______ and had no basis in reality.",
+    a: ["fabricated", "unverified", "curated", "coherent"],
+    c: 0
+  },
+  {
+    q: "Although the article appeared on several popular websites, its claims remained ______ because no independent organisation had checked the original evidence.",
+    a: ["comprehensive", "unprecedented", "unverified", "credible"],
+    c: 2
+  },
+  {
+    q: "The researcher's conclusions were considered ______ because they relied on anonymous sources, contradictory data, and several documents of questionable authenticity.",
+    a: ["coherent", "dubious", "proactive", "essential"],
+    c: 1
+  },
+  {
+    q: "The company deliberately used ______ advertising techniques, displaying misleading before-and-after photographs to persuade customers that its product produced impossible results.",
+    a: ["ethical", "comprehensive", "first-hand", "deceptive"],
+    c: 3
+  },
+  {
+    q: "The journalist was asked to rewrite the report because its arguments were fragmented and lacked a ______ explanation connecting the evidence to the final conclusion.",
+    a: ["coherent", "sensational", "disparate", "redundant"],
+    c: 0
+  },
+  {
+    q: "Constant exposure to alarming headlines may ______ existing public anxiety, turning relatively minor concerns into widespread fear.",
+    a: ["alleviate", "compensate for", "exacerbate", "refine"],
+    c: 2
+  },
+  {
+    q: "The broadcasting system was designed to ______ emergency announcements so that residents across the entire disaster-affected region could hear them clearly.",
+    a: ["downplay", "amplify", "impede", "overlook"],
+    c: 1
+  },
+  {
+    q: "Unexpected technical failures could ______ the rescue operation by preventing emergency teams from communicating with one another.",
+    a: ["facilitate", "cultivate", "enhance", "impede"],
+    c: 3
+  },
+  {
+    q: "The new online platform was developed to ______ communication between teachers and parents, making it easier to exchange information and resolve concerns.",
+    a: ["facilitate", "fragment", "exacerbate", "impede"],
+    c: 0
+  },
+  {
+    q: "Rather than providing temporary financial assistance alone, the programme aims to ______ entrepreneurship by offering practical training, mentorship, and access to business networks.",
+    a: ["downplay", "manipulate", "foster", "overlook"],
+    c: 2
+  },
+  {
+    q: "The documentary's personal accounts of families separated by war deeply ______ with viewers, many of whom had experienced similar hardships.",
+    a: ["circulated", "resonated", "fluctuated", "materialized"],
+    c: 1
+  },
+  {
+    q: "The minister attempted to ______ the seriousness of the water contamination incident, describing it as a minor technical problem despite evidence of widespread health risks.",
+    a: ["reinforce", "retrieve", "amplify", "downplay"],
+    c: 3
+  },
+  {
+    q: "Following an unprecedented increase in cyberattacks, the government adopted a ______ cybersecurity strategy covering prevention, detection, emergency response, and long-term recovery.",
+    a: ["comprehensive", "superficial", "fragmented", "redundant"],
+    c: 0
+  },
+  {
+    q: "Instead of waiting for customers to report security problems, the bank adopted a ______ approach by regularly identifying vulnerabilities before criminals could exploit them.",
+    a: ["sensational", "elusive", "proactive", "deceptive"],
+    c: 2
+  },
+  {
+    q: "The journalist travelled to the conflict zone and interviewed survivors in person to obtain ______ accounts rather than relying entirely on second-hand online reports.",
+    a: ["inflated", "first-hand", "fabricated", "curated"],
+    c: 1
+  }
+];
+
+
+// 🔀 RANDOM CÂU + ĐÁP ÁN
+let questions = shuffle(originalQuestions.map(q=>{
+  let opts = q.a.map((t,i)=>({t,correct:i===q.c}));
+  opts = shuffle(opts);
+  return {
+    q:q.q,
+    a:opts.map(o=>o.t),
+    c:opts.findIndex(o=>o.correct)
+  };
+}));
+
+// render
+const quizDiv=document.getElementById("quiz");
+
+questions.forEach((q,i)=>{
+  let div=document.createElement("div");
+  div.className="question";
+
+  let html=`${i+1}. ${q.q}`;
+
+  q.a.forEach((ans,idx)=>{
+    html+=`
+    <div class="answers">
+      <label>
+        <input type="radio" name="q${i}" value="${idx}">
+        ${String.fromCharCode(65+idx)}. ${ans}
+      </label>
+    </div>`;
+  });
+
+  div.innerHTML=html;
+  quizDiv.appendChild(div);
+});
+
+// 🔒 BẮT BUỘC NHẬP TÊN TRƯỚC KHI LÀM BÀI
+const usernameInput = document.getElementById("username");
+const nameHint = document.getElementById("nameHint");
+
+function setQuizAccess(){
+  const hasName = usernameInput.value.trim().length > 0;
+  document.querySelectorAll('#quiz input[type="radio"]').forEach(input=>{
+    input.disabled = !hasName || submitted || timeExpired;
+  });
+  quizDiv.classList.toggle("quiz-locked", !hasName && !submitted);
+  nameHint.style.display = hasName ? "none" : "block";
+}
+
+usernameInput.addEventListener("input", setQuizAccess);
+setQuizAccess();
+
+// ⏱ timer
+let time=1200;
+let timer=setInterval(()=>{
+  let m=Math.floor(time/60);
+  let s=time%60;
+  document.getElementById("timer").innerText=`⏳ ${m}:${s<10?"0"+s:s}`;
+  time--;
+  if(time<0){
+    clearInterval(timer);
+    timeExpired = true;
+    submitQuiz(true);
+  }
+},1000);
+
+// submit
+function submitQuiz(forceSubmit=false){
+  if(submitted) return;
+
+  let name=document.getElementById("username").value.trim();
+  if(!name){
+    if(forceSubmit){
+      name = "CHƯA NHẬP TÊN";
+    }else{
+      alert("❌ Bạn phải nhập tên trước khi làm và nộp bài!");
+      usernameInput.focus();
+      return;
+    }
+  }
+let hasEmpty = false;
+
+// kiểm tra câu chưa làm
+questions.forEach((q,i)=>{
+  let selected=document.querySelector(`input[name=q${i}]:checked`);
+  let div=document.getElementsByClassName("question")[i];
+
+  div.classList.remove("unanswered");
+
+  if(!selected){
+    div.classList.add("unanswered");
+    hasEmpty = true;
+  }
+});
+
+if(hasEmpty && !forceSubmit){
+  alert("❌ Bạn phải làm hết câu trước khi nộp!");
+  return;
+}
+  clearInterval(timer);
+  submitted = true;
+
+  // 🔒 Khóa toàn bộ bài sau khi nộp / hết giờ
+  document.querySelectorAll('#quiz input[type="radio"]').forEach(input=>input.disabled=true);
+  usernameInput.disabled = true;
+  quizDiv.classList.remove("quiz-locked");
+  const submitBtn = document.querySelector('button[onclick="submitQuiz()"]');
+  if(submitBtn){
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = "0.55";
+    submitBtn.style.cursor = "not-allowed";
+    submitBtn.innerText = timeExpired ? "⏰ Đã hết giờ - Bài đã tự nộp" : "✅ Đã nộp bài";
+  }
+
+  let score=0;
+  let wrongList=[];
+
+  questions.forEach((q,i)=>{
+    let selected=document.querySelector(`input[name=q${i}]:checked`);
+    if(!selected)return;
+
+    let val=parseInt(selected.value);
+
+    if(val===q.c){
+      score++;
+    } else {
+      wrongList.push({
+        question:q.q,
+        your:String.fromCharCode(65+val)+". "+q.a[val],
+        correct:String.fromCharCode(65+q.c)+". "+q.a[q.c]
+      });
+    }
+  });
+
+  // ⭐ TIME
+  let now = new Date().toLocaleString();
+
+  // hiển thị
+  let wrongRate = wrongList.length / questions.length;
+
+let resultHTML = `
+🎉 <b>${name}</b> đúng <b>${score}/${questions.length}</b><br>
+⏰ ${now}<br>
+⚠️ TabSwitch: ${tabSwitchCount || 0}<br>
+${timeExpired ? "⏰ <b>Hết thời gian: hệ thống đã tự động nộp và khóa bài.</b><br>" : ""}<br>
+`;
+
+if(wrongRate < 0.3){
+
+    resultHTML += `
+    <h3>📚 Đáp án các câu sai</h3>
+    `;
+
+    wrongList.forEach((w,i)=>{
+        resultHTML += `
+        <div style="
+            border:1px solid #ddd;
+            padding:10px;
+            margin-bottom:10px;
+            border-radius:10px;
+            background:#fff8e6;
+        ">
+            <b>Câu ${i+1}</b><br>
+            ${w.question}<br><br>
+
+            ❌ Bạn chọn: <span style="color:red">${w.your}</span><br>
+            ✅ Đáp án: <span style="color:green">${w.correct}</span>
+        </div>
+        `;
+    });
+
+}else{
+
+    resultHTML += `
+    <div style="
+        background:#ffeaea;
+        padding:15px;
+        border-radius:12px;
+        color:#c00000;
+        font-weight:bold;
+    ">
+    ❌ Sai trên 30% mà đòi mấy đáp án của mẹ hả cưng?<br>
+    Học bài kỹ vô bữa sau mẹ khảo lại!
+    </div>
+    `;
+}
+
+document.getElementById("result").innerHTML = resultHTML;
+
+  // ⭐ GỬI DATA FULL
+  fetch("https://script.google.com/macros/s/AKfycbwKGHpjJy1RxNpGRIHdZtQiPfCrh0OSG24DEzQtRB7Ezlr1aki97aZL0JfQiSwkKmYmrg/exec",{
+    method:"POST",
+    body:JSON.stringify({
+      time: now,
+      name: name,
+      score: score,
+      total: questions.length,
+      tabSwitch: tabSwitchCount || 0,
+      wrong: wrongList.map((w,i)=>
+        (i+1)+". "+w.question+
+        " | Bạn chọn: "+w.your+
+        " | Đúng: "+w.correct
+      ).join("\n")
+    })
+  });
+}
+
+</script>
+
+</body>
+</html>
